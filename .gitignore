@@ -1,0 +1,9 @@
+# catkin_make files
+build
+devel
+.catkin_workspace
+
+# VS Code files
+.vscode
+
+./models
