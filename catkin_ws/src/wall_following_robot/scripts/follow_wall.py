@@ -11,7 +11,9 @@ wall_lead = 0.4
 g_pub = None
 g_sub = None
 
-g_alpha = -1
+g_side = 0
+
+g_alpha = 0
 
 g_linear_speed = 0.1
 g_factor = 1
@@ -23,7 +25,7 @@ def update_command_vel(linear_vel, angular_vel):
     g_pub.publish(msg)
 
 
-def scanCallback(msg):
+def scan_callback(msg):
     scan_max_value = msg.range_max
 
     regions = {
@@ -34,17 +36,27 @@ def scanCallback(msg):
         'left':  min(msg.ranges[90], scan_max_value),
     }
 
-    global g_alpha, g_linear_speed, g_factor
+    global g_side, g_alpha, g_linear_speed, g_factor
+
+    if g_side == 0:
+        g_side = -1 if regions['fright'] < regions['fleft'] else 1
 
     g_factor = 1 if regions['front'] > 1 else 2.5
 
     g_linear_speed = 0.1 if regions['front'] > 2 else regions['front'] / 2 * 0.1
 
-    y0 = regions['right']
-    x1 = regions['fright'] * math.sin(math.pi / 4)
-    y1 = regions['fright'] * math.cos(math.pi / 4)
+    if g_side == -1:
+        y0 = regions['right']
+        x1 = regions['fright'] * math.sin(math.pi / 4)
+        y1 = regions['fright'] * math.cos(math.pi / 4)
+    else:
+        y0 = regions['left']
+        x1 = regions['fleft'] * math.sin(math.pi / 4)
+        y1 = regions['fleft'] * math.cos(math.pi / 4)
+    
+    turn_fix = (0 if regions['front'] > 0.5 else 0.7 - regions['front'])
 
-    g_alpha = math.atan2(y1 - distance_wall, x1 + wall_lead - y0) - (0 if regions['front'] > 0.5 else 1 - regions['front'])
+    g_alpha = g_side * math.atan2(y1 - distance_wall, x1 + wall_lead - y0) #- turn_fix
 
     print(g_alpha)
 
@@ -53,10 +65,10 @@ if __name__ == '__main__':
     rospy.init_node('wall_following_robot')
 
     g_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-    g_sub = rospy.Subscriber('/scan', LaserScan, scanCallback)
+    g_sub = rospy.Subscriber('/scan', LaserScan, scan_callback)
 
     rate = rospy.Rate(20)
 
     while not rospy.is_shutdown():
-        update_command_vel(0.1, -(g_alpha))
+        update_command_vel(0.1, g_alpha)
         rate.sleep()
