@@ -61,8 +61,6 @@ def scan_callback(msg):
         if delta_time > 6:
             rand = random.randrange(0, 5)
 
-            rand = 4
-
             g_alpha = math.pi / 2 - rand * math.pi / 4
 
             g_turn_start_time = time.time()
