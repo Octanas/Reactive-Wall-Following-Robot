@@ -103,10 +103,10 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
-      <sim_time>1 849000000</sim_time>
-      <real_time>1 877344835</real_time>
-      <wall_time>1637578618 8138700</wall_time>
-      <iterations>1849</iterations>
+      <sim_time>20 556000000</sim_time>
+      <real_time>19 90987462</real_time>
+      <wall_time>1637596372 782997565</wall_time>
+      <iterations>18707</iterations>
       <model name='LetterB'>
         <pose>3.82649 -0.458367 -0.167949 0 -0 0</pose>
         <scale>1 1 1</scale>
