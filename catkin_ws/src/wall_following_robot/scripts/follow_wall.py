@@ -38,14 +38,14 @@ def scan_callback(msg):
 
     regions = {
         'N':  min(msg.ranges[0], scan_max_value),
-        'NNW':  min(msg.ranges[23], scan_max_value),
+        'NNW':  min(msg.ranges[15], scan_max_value),
         'NW':  min(msg.ranges[45], scan_max_value),
         'WNW':  min(msg.ranges[68], scan_max_value),
         'W':  min(msg.ranges[90], scan_max_value),
         'E':  min(msg.ranges[270], scan_max_value),
         'ENE':  min(msg.ranges[293], scan_max_value),
         'NE':  min(msg.ranges[315], scan_max_value),
-        'NNE':  min(msg.ranges[338], scan_max_value),
+        'NNE':  min(msg.ranges[345], scan_max_value),
     }
 
     global g_side, g_alpha, g_linear_speed, g_state, g_turn_start_time, g_wall_direction
@@ -54,7 +54,7 @@ def scan_callback(msg):
 
     if g_state == 0:  # wander
         for r, v in regions.items():
-            if v < scan_max_value:
+            if r in ["N", "W", "E", "NW", "NE"] and v < scan_max_value:
                 print('Will change to state 1')
                 g_state = 1
                 g_wall_direction = r
@@ -114,23 +114,24 @@ def scan_callback(msg):
 
         print('y0: ', y0)
 
-        front_scan = min([regions['N'], regions['NNW'], regions['NNE']])
+        front_scan = min([regions['N'], regions['NNW'] + (scan_max_value - regions['WNW']), regions['NNE'] + (scan_max_value - regions['ENE'])])
 
         print('front_scan: ', front_scan)
+
+        # if front_scan <= 0.3:
+        #     g_linear_speed *= (0.8 - front_scan)
         
         if y0 >= distance_wall * 2 and regions['N'] < scan_max_value:
             print('NOT USING ALGORITHM')
             g_alpha = -math.pi / 4 * g_side
         else:
             print('USING ALGORITHM')
-            # FIXME: turn_fix sometimes badly influences a_alpha
-            # FIXME: and sometimes is not enough
-            turn_fix = (0 if front_scan > 0.5 else 1 - front_scan)
+            turn_fix = (0 if front_scan >= 0.5 else 1 - front_scan)
 
             print('Turn fix: ', turn_fix)
 
             abs_alpha = math.atan2(y1 - distance_wall,
-                                x1 + wall_lead - y0) - turn_fix
+                                x1 + wall_lead - y0) - turn_fix * 1.5
             
             print('Abs alpha: ', abs_alpha)
 
