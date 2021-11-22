@@ -7,8 +7,8 @@ import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
-distance_wall = 0.2
-wall_lead = 0.4
+distance_wall = 0.4
+wall_lead = 0.8
 
 g_pub = None
 g_sub = None
@@ -46,11 +46,12 @@ def scan_callback(msg):
 
     global g_side, g_alpha, g_linear_speed, g_state, g_turn_start_time, g_wall_direction
 
-    if g_state == 0:  # wander
-        g_linear_speed = 0.1
+    g_linear_speed = 0.1
 
+    if g_state == 0:  # wander
         for r, v in regions.items():
             if v < scan_max_value:
+                print('Will change to state 1')
                 g_state = 1
                 g_wall_direction = r
                 g_turn_start_time = time.time()
@@ -67,10 +68,9 @@ def scan_callback(msg):
         elif delta_time > 1:
             g_alpha = 0
     elif g_state == 1:  # drive towards wall
-        g_linear_speed = 0.1
-
-        if regions['front'] < 0.4:
+        if regions['front'] < 0.5 or regions['fleft'] < 0.5 or regions['fright'] < 0.5:
             g_state = 2
+            print('Will change to state 2')
             if g_side == 0:
                 left = (regions['left'] + regions['fleft']) / 2
                 right = (regions['right'] + regions['fright']) / 2
@@ -79,6 +79,8 @@ def scan_callback(msg):
                     g_side = -1 if right < left else 1
                 else:
                     g_side = random.randrange(-1, 2, 2)
+
+                print('Chosen side: ', g_side)
             return
 
         delta_time = time.time() - g_turn_start_time
@@ -106,12 +108,27 @@ def scan_callback(msg):
             x1 = regions['fleft'] * math.sin(math.pi / 4)
             y1 = regions['fleft'] * math.cos(math.pi / 4)
 
-        turn_fix = (0 if regions['front'] > 0.5 else 0.7 - regions['front'])
+        print('y0: ', y0)
+        print('scan front: ', regions['front'])
+        
+        if y0 >= distance_wall * 2 and regions['front'] < scan_max_value:
+            print('NOT USING ALGORITHM')
+            g_alpha = -math.pi / 4 * g_side
+        else:
+            print('USING ALGORITHM')
+            turn_fix = (0 if regions['front'] > 0.5 else 0.7 - regions['front'])
 
-        g_alpha = g_side * (math.atan2(y1 - distance_wall,
-                            x1 + wall_lead - y0) + turn_fix)
+            print('Turn fix: ', turn_fix)
 
-        print(g_alpha)
+            abs_alpha = math.atan2(y1 - distance_wall,
+                                x1 + wall_lead - y0) - turn_fix
+            
+            print('Abs alpha: ', abs_alpha)
+
+            g_alpha = g_side * abs_alpha
+
+        print('Alpha: ', g_alpha)
+        print('')
 
 
 if __name__ == '__main__':
