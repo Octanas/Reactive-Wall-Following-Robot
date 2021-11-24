@@ -36,16 +36,17 @@ def update_command_vel(linear_vel, angular_vel):
 def scan_callback(msg):
     scan_max_value = msg.range_max
 
+    # Each region scans 9 degrees
     regions = {
-        'N':  min(msg.ranges[0], scan_max_value),
-        'NNW':  min(msg.ranges[15], scan_max_value),
-        'NW':  min(msg.ranges[45], scan_max_value),
-        'WNW':  min(msg.ranges[68], scan_max_value),
-        'W':  min(msg.ranges[90], scan_max_value),
-        'E':  min(msg.ranges[270], scan_max_value),
-        'ENE':  min(msg.ranges[293], scan_max_value),
-        'NE':  min(msg.ranges[315], scan_max_value),
-        'NNE':  min(msg.ranges[345], scan_max_value),
+        'N':  min(min(msg.ranges[len(msg.ranges) - 4 : len(msg.ranges) - 1] + msg.ranges[0:5]), scan_max_value),
+        'NNW':  min(min(msg.ranges[11:20]), scan_max_value),
+        'NW':  min(min(msg.ranges[41:50]), scan_max_value),
+        'WNW':  min(min(msg.ranges[64:73]), scan_max_value),
+        'W':  min(min(msg.ranges[86:95]), scan_max_value),
+        'E':  min(min(msg.ranges[266:275]), scan_max_value),
+        'ENE':  min(min(msg.ranges[289:298]), scan_max_value),
+        'NE':  min(min(msg.ranges[311:320]), scan_max_value),
+        'NNE':  min(min(msg.ranges[341:350]), scan_max_value),
     }
 
     global g_side, g_alpha, g_linear_speed, g_state, g_turn_start_time, g_wall_direction
@@ -72,7 +73,9 @@ def scan_callback(msg):
         elif delta_time > 1:
             g_alpha = 0
     elif g_state == 1:  # drive towards wall
-        if regions['N'] < 0.5 or regions['NW'] < 0.5 or regions['NE'] < 0.5:
+        min_distance = distance_wall + 0.3
+
+        if regions['N'] < min_distance or regions['NW'] < min_distance or regions['NE'] < min_distance:
             g_state = 2
             print('Will change to state 2')
             if g_side == 0:
@@ -118,9 +121,6 @@ def scan_callback(msg):
 
         print('front_scan: ', front_scan)
 
-        # if front_scan <= 0.3:
-        #     g_linear_speed *= (0.8 - front_scan)
-        
         if y0 >= distance_wall * 2 and regions['N'] < scan_max_value:
             print('NOT USING ALGORITHM')
             g_alpha = -math.pi / 4 * g_side
