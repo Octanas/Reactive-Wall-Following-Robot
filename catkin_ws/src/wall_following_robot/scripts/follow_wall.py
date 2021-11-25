@@ -7,6 +7,7 @@ import time
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
+from rospy.exceptions import ROSInterruptException
 
 g_distance_wall = 0.2
 g_wall_lead = 0.4
@@ -34,6 +35,8 @@ g_turn_start_time = 0
 # Bearing at which the wall was found (used in state 0 and 1)
 g_wall_direction = None
 
+# Sim time at which the algorithm started running
+g_start_sim_time = None
 
 def update_command_vel(linear_vel, angular_vel):
     msg = Twist()
@@ -173,20 +176,28 @@ def load_arguments():
     return True
 
 
-if __name__ == '__main__':
-    if load_arguments():
-        print('Starting with values:')
-        print('- linear speed: ', str(g_linear_speed))
-        print('- distance to wall: ', str(g_distance_wall))
-        print('')
+try:
+    if __name__ == '__main__':
+        if load_arguments():
+            print('Starting with values:')
+            print('- linear speed: ', str(g_linear_speed))
+            print('- distance to wall: ', str(g_distance_wall))
+            print('')
 
-        rospy.init_node('wall_following_robot')
+            rospy.init_node('wall_following_robot')
 
-        g_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-        g_sub = rospy.Subscriber('/scan', LaserScan, scan_callback)
+            g_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+            g_sub = rospy.Subscriber('/scan', LaserScan, scan_callback)
 
-        rate = rospy.Rate(20)
+            rate = rospy.Rate(20)
 
-        while not rospy.is_shutdown():
-            update_command_vel(g_linear_speed, g_alpha)
-            rate.sleep()
+            g_start_sim_time = rospy.get_time()
+            print('Started at {} seconds (sim time)'.format(g_start_sim_time))
+
+            while not rospy.is_shutdown():
+                update_command_vel(g_linear_speed, g_alpha)
+                rate.sleep()
+except ROSInterruptException:
+    end_sim_time = rospy.get_time()
+    print('Finished at {} seconds (sim time)'.format(end_sim_time))
+    print('Ran for {} seconds'.format(end_sim_time - g_start_sim_time))
