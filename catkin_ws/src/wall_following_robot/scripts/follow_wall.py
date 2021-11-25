@@ -10,21 +10,28 @@ from sensor_msgs.msg import LaserScan
 
 g_distance_wall = 0.2
 g_wall_lead = 0.4
-g_linear_speed_max = 0.1
 
 g_pub = None
 g_sub = None
 
+# Will follow wall from the left: 1
+# Will follow wall from the right: -1
 g_side = 0
 
+# Angular velocity
 g_alpha = 0
+# Linear velocity
+g_linear_speed = 0.1
 
-g_linear_speed = 0
-
+# State 0: wandering, looking for wall
+# State 1: wall has been found, go in its direction
+# State 2: follow wall
 g_state = 0
 
+# When the robot turned the last time (used in state 0 and 1)
 g_turn_start_time = 0
 
+# Bearing at which the wall was found (used in state 0 and 1)
 g_wall_direction = None
 
 
@@ -51,19 +58,19 @@ def scan_callback(msg):
         'NNE':  min(min(msg.ranges[341:350]), scan_max_value),
     }
 
-    global g_side, g_alpha, g_linear_speed, g_state, g_turn_start_time, g_wall_direction
-
-    g_linear_speed = g_linear_speed_max
+    global g_side, g_alpha, g_state, g_turn_start_time, g_wall_direction
 
     if g_state == 0:  # wander
+        # Check if wall is being detected
         for r, v in regions.items():
             if r in ["N", "W", "E", "NW", "NE"] and v < scan_max_value:
-                print('Will change to state 1')
+                print('Will change to state 1: drive towards wall ({})'.format(r))
                 g_state = 1
                 g_wall_direction = r
                 g_turn_start_time = time.time()
                 return
 
+        # Turn in a random direction every 6 seconds
         delta_time = time.time() - g_turn_start_time
 
         if delta_time > 6:
@@ -75,11 +82,13 @@ def scan_callback(msg):
         elif delta_time > 1:
             g_alpha = 0
     elif g_state == 1:  # drive towards wall
+        # Minimum distance to start following wall
         min_distance = g_distance_wall + 0.3
 
+        # Check if it is close enough to start following wall
         if regions['N'] < min_distance or regions['NW'] < min_distance or regions['NE'] < min_distance:
             g_state = 2
-            print('Will change to state 2')
+
             if g_side == 0:
                 left = (regions['W'] + regions['NW']) / 2
                 right = (regions['E'] + regions['NE']) / 2
@@ -89,9 +98,10 @@ def scan_callback(msg):
                 else:
                     g_side = random.randrange(-1, 2, 2)
 
-                print('Chosen side: ', g_side)
+            print('Will change to state 2: follow wall from the {}'.format('left' if g_side == 1 else 'right'))
             return
 
+        # Turn to the wall
         delta_time = time.time() - g_turn_start_time
 
         if delta_time <= 1:
@@ -108,40 +118,27 @@ def scan_callback(msg):
         else:
             g_alpha = 0
     elif g_state == 2:  # follow wall
-        if g_side == -1:
-            y0 = regions['E']
-            x1 = regions['ENE'] * math.sin(math.radians(23))
-            y1 = regions['ENE'] * math.cos(math.radians(23))
-        else:
-            y0 = regions['W']
-            x1 = regions['WNW'] * math.sin(math.radians(23))
-            y1 = regions['WNW'] * math.cos(math.radians(23))
 
-        print('y0: ', y0)
+        y0 = regions['E'] if g_side == -1 else regions['W']
+        x1 = (regions['ENE'] if g_side == -1 else regions['WNW']) * math.sin(math.radians(23))
+        y1 = (regions['ENE'] if g_side == -1 else regions['WNW']) * math.cos(math.radians(23))
 
-        front_scan = min([regions['N'], regions['NNW'] + (scan_max_value - regions['WNW']), regions['NNE'] + (scan_max_value - regions['ENE'])])
-
-        print('front_scan: ', front_scan)
-
+        # If the robot is heading into the wall, turn sideways
         if y0 >= g_distance_wall * 2 and regions['N'] < scan_max_value:
-            print('NOT USING ALGORITHM')
             g_alpha = -math.pi / 4 * g_side
         else:
-            print('USING ALGORITHM')
+            # Check scan info from the front of the robot
+            front_scan = min([regions['N'], regions['NNW'] + (scan_max_value - regions['WNW']), regions['NNE'] + (scan_max_value - regions['ENE'])])
+
+            # If there is a wall close, adjust turn to not hit it (important for inner corners/turns)
             turn_fix = (0 if front_scan >= 0.5 else 1 - front_scan)
 
-            print('Turn fix: ', turn_fix)
-
+            # Calculate angular velocity to keep wall distance
             abs_alpha = math.atan2(y1 - g_distance_wall,
                                 x1 + g_wall_lead - y0) - turn_fix * 1.5
             
-            print('Abs alpha: ', abs_alpha)
-
+            # Choose correct direction for angular velocity
             g_alpha = g_side * abs_alpha
-
-        print('Alpha: ', g_alpha)
-        print('')
-
 
 def load_arguments():
     if len(sys.argv) > 1:
@@ -153,8 +150,8 @@ def load_arguments():
                 if arg == '--speed' or arg == '-s':
                     try:
                         value = float(value)
-                        global g_linear_speed_max
-                        g_linear_speed_max = value
+                        global g_linear_speed
+                        g_linear_speed = value
                     except ValueError:
                         print('Error parsing speed value')
                         return False
@@ -179,7 +176,7 @@ def load_arguments():
 if __name__ == '__main__':
     if load_arguments():
         print('Starting with values:')
-        print('- linear speed: ', str(g_linear_speed_max))
+        print('- linear speed: ', str(g_linear_speed))
         print('- distance to wall: ', str(g_distance_wall))
         print('')
 
