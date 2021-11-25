@@ -2,13 +2,15 @@
 
 import math
 import random
+import sys
 import time
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
-distance_wall = 0.2
-wall_lead = 0.4
+g_distance_wall = 0.2
+g_wall_lead = 0.4
+g_linear_speed_max = 0.1
 
 g_pub = None
 g_sub = None
@@ -51,7 +53,7 @@ def scan_callback(msg):
 
     global g_side, g_alpha, g_linear_speed, g_state, g_turn_start_time, g_wall_direction
 
-    g_linear_speed = 0.1
+    g_linear_speed = g_linear_speed_max
 
     if g_state == 0:  # wander
         for r, v in regions.items():
@@ -73,7 +75,7 @@ def scan_callback(msg):
         elif delta_time > 1:
             g_alpha = 0
     elif g_state == 1:  # drive towards wall
-        min_distance = distance_wall + 0.3
+        min_distance = g_distance_wall + 0.3
 
         if regions['N'] < min_distance or regions['NW'] < min_distance or regions['NE'] < min_distance:
             g_state = 2
@@ -121,7 +123,7 @@ def scan_callback(msg):
 
         print('front_scan: ', front_scan)
 
-        if y0 >= distance_wall * 2 and regions['N'] < scan_max_value:
+        if y0 >= g_distance_wall * 2 and regions['N'] < scan_max_value:
             print('NOT USING ALGORITHM')
             g_alpha = -math.pi / 4 * g_side
         else:
@@ -130,8 +132,8 @@ def scan_callback(msg):
 
             print('Turn fix: ', turn_fix)
 
-            abs_alpha = math.atan2(y1 - distance_wall,
-                                x1 + wall_lead - y0) - turn_fix * 1.5
+            abs_alpha = math.atan2(y1 - g_distance_wall,
+                                x1 + g_wall_lead - y0) - turn_fix * 1.5
             
             print('Abs alpha: ', abs_alpha)
 
@@ -141,14 +143,53 @@ def scan_callback(msg):
         print('')
 
 
+def load_arguments():
+    if len(sys.argv) > 1:
+        if len(sys.argv) % 2 == 1:
+            for i in range(1, len(sys.argv), 2):
+                arg = sys.argv[i]
+                value = sys.argv[i + 1]
+
+                if arg == '--speed' or arg == '-s':
+                    try:
+                        value = float(value)
+                        global g_linear_speed_max
+                        g_linear_speed_max = value
+                    except ValueError:
+                        print('Error parsing speed value')
+                        return False
+                elif arg == '--wall_distance' or arg == '-d':
+                    try:
+                        value = float(value)
+                        global g_distance_wall
+                        g_distance_wall = value
+                    except ValueError:
+                        print('Error parsing wall distance value')
+                        return False
+                else:
+                    print('Unrecognized argument: ', arg)
+                    return False
+        else:
+            print('Incorrect number of arguments')
+            return False
+
+    return True
+
+
 if __name__ == '__main__':
-    rospy.init_node('wall_following_robot')
+    if load_arguments():
+        print('Starting with values:')
+        print('- linear speed: ', str(g_linear_speed_max))
+        print('- distance to wall: ', str(g_distance_wall))
+        print('')
 
-    g_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
-    g_sub = rospy.Subscriber('/scan', LaserScan, scan_callback)
+        rospy.init_node('wall_following_robot')
 
-    rate = rospy.Rate(20)
+        g_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        g_sub = rospy.Subscriber('/scan', LaserScan, scan_callback)
 
-    while not rospy.is_shutdown():
-        update_command_vel(g_linear_speed, g_alpha)
-        rate.sleep()
+        rate = rospy.Rate(20)
+
+        while not rospy.is_shutdown():
+            update_command_vel(g_linear_speed, g_alpha)
+            rate.sleep()
