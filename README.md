@@ -47,7 +47,7 @@ Each launch file loads one of the included worlds and places the robot in a defa
 roslaunch wall_following_robot <launch_file_name>.launch x_pos:=<x_coordinate> y_pos:=<y_coordinate> z_pos:=<z_coordinate>
 ```
 
-For example, if you want to load the simulation with the uniform 'B' wall where the robot starts on the outside (default position for that specific `.launch` file), you should run this command:
+For example, if you want to load the simulation with the plain 'B' wall where the robot starts on the outside (default position for that specific `.launch` file), you should run this command:
 
 ```
 roslaunch wall_following_robot single_uniform_letter_b_world.launch
@@ -63,7 +63,7 @@ After you've loaded the simulation, you can start the algorithm script, and obse
 rosrun wall_following_robot follow_wall.py
 ```
 
-The script receives scan information from the robot through the `/scan` topic and sends movement instructions through the `/cmd_vel` topic. You can see the messages sent, using the `rostopic echo` command:
+The script receives sensor information from the robot through the `/scan` topic and sends movement instructions through the `/cmd_vel` topic. You can see the messages sent, using the `rostopic echo` command:
 
 ```
 rostopic echo /scan
@@ -97,13 +97,3 @@ Inside the `launch` folder, you have the following files:
 * `single_letter_b_world.launch` - Map with a smaller rough 'B'-shaped wall where the robot spawns outside the 'B'
 * `single_uniform_letter_b_world.launch` - Map with a plain 'B'-shaped wall where the robot spawns outside the 'B'
 * `single_uniform_letter_b_world_inside.launch` - Map with a plain 'B'-shaped wall where the robot spawns inside the 'B'
-
-```
-simulations
-    ├── larger_single_letter_b_world.launch
-    ├── larger_single_letter_b_world_inside.launch
-    ├── sharp_turns_world.launch
-    ├── single_letter_b_world.launch
-    ├── single_uniform_letter_b_world.launch
-    └── single_uniform_letter_b_world_inside.launch
-```
