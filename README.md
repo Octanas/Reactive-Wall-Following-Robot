@@ -27,7 +27,7 @@ catkin_make
 
 ### Add this workspace to `ROS_PACKAGE_PATH` environment variable
 
-First of all, make sure that you've sourced the `setup.sh` of this workspace, running the following command from the project's root:
+First of all, make sure that you've sourced the `setup.bash` of this workspace, running the following command from the project's root:
 
 ```
 source ./catkin_ws/devel/setup.bash
