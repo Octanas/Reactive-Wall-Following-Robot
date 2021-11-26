@@ -8,4 +8,4 @@ devel
 
 ./models
 
-./catkin_ws/src/CMakeLists.txt
+/catkin_ws/src/CMakeLists.txt
