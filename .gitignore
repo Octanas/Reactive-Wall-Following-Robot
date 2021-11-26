@@ -7,3 +7,5 @@ devel
 .vscode
 
 ./models
+
+./catkin_ws/src/CMakeLists.txt
