@@ -78,16 +78,18 @@ To know more about how the algorithm works, check the included article or the co
 ## Directory Structure
 
 ```
-└── catkin_ws                       <-- catkin workspace to run the project
-    └── src
-        └── wall_following_robot    <-- package of the project
-            ├── CMakeLists.txt
-            ├── launch              <-- included launch files to load simulations
-            ├── models              <-- necessary files to load the models in the simulations
-            ├── package.xml
-            ├── scripts
-            │   └── follow_wall.py  <-- wall-following algorithm script
-            └── worlds              <-- simulation environments
+├── catkin_ws                       <-- catkin workspace to run the project
+│   └── src
+│       └── wall_following_robot    <-- package of the project
+│           ├── CMakeLists.txt
+│           ├── launch              <-- included launch files to load simulations
+│           ├── models              <-- necessary files to load the models in the simulations
+│           ├── package.xml
+│           ├── scripts
+│           │   └── follow_wall.py  <-- wall-following algorithm script
+│           └── worlds              <-- simulation environments
+└── docs
+    └── article.pdf                 <-- article about the project
 ```
 
 Inside the `launch` folder, you have the following files:
