@@ -10,7 +10,7 @@ This project was proposed within the Intelligent Robotics curricular unit of the
 
 To execute the simulations, you need the following:
 * ROS Noetic ([instructions to install on Ubuntu](http://wiki.ros.org/noetic/Installation/Ubuntu))
-* Python 3.8.10 or later
+* Python 3
 * Gazebo simulator (should come included with ROS, otherwise [instructions to install on Ubuntu](http://gazebosim.org/tutorials?tut=install_ubuntu))
 * Turtlebot3 packages ([instructions to install on Ubuntu](https://emanual.robotis.com/docs/en/platform/turtlebot3/quick-start/))
 
